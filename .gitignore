@@ -1,0 +1,39 @@
+# Environment variables
+.env
+
+# Input directory - ignore all content except placeholder
+input/*
+!input/.gitkeep
+
+# Output directory - ignore all content except placeholder  
+output/*
+!output/.gitkeep
+
+# FFmpeg log
+ffmpeg.log
+
+# Virtual environment
+env/
+venv/
+.env/
+.venv/
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
