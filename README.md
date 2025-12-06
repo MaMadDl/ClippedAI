@@ -297,3 +297,7 @@ This project is licensed under the Creative Commons Attribution-NonCommercial 4.
 ---
 
 **Star this repository** if you find it helpful!
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Shaarav4795/ClippedAI&type=date&legend=top-left)](https://www.star-history.com/#Shaarav4795/ClippedAI&type=date&legend=top-left)
