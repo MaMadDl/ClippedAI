@@ -20,4 +20,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./website
           publish_branch: gh-pages
+          # Ensure the custom domain is written to the published site so Pages uses it
+          cname: clippedai.shaarav.xyz
           allow_empty_commit: true
