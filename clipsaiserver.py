@@ -3,6 +3,8 @@ from main import task_queue, results_store
 
 import uuid
 
+import uuid
+
 app = Flask(__name__)
 
 
