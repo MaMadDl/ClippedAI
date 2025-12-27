@@ -60,7 +60,7 @@ nltk.download('punkt')
 
 # --- Directories ---
 INPUT_DIR = "input"
-OUTPUT_DIR = "output"
+OUTPUT_DIR = os.getenv("OUTPUT_PATH", "output")
 FONT_DIR = "fonts"
 
 # --- Hugging Face ---
@@ -490,7 +490,7 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
         media_editor = MediaEditor()
         media_file = AudioVideoFile(input_path)
 
-        trimmed_path = os.path.join(OUTPUT_DIR, f"trimmed_{idx}.mp4")
+        trimmed_path = os.path.join(OUTPUT_DIR +"/trimmed", f"trimmed_{idx}.mp4")
         media_editor.trim(
             media_file=media_file,
             start_time=clip.start_time,
@@ -498,7 +498,7 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
             trimmed_media_file_path=trimmed_path
         )
 
-        output_path = os.path.join(OUTPUT_DIR, f"short_{idx}.mp4")
+        output_path = os.path.join(OUTPUT_DIR +"/resized", f"short_{idx}.mp4")
         try:
             crops = resize(
                 video_file_path=trimmed_path,
@@ -529,7 +529,7 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
         timer.stop(f"clip_{idx}_title")
 
         final_name = safe_filename(title) + ".mp4"
-        final_path = os.path.join(OUTPUT_DIR, final_name)
+        final_path = os.path.join(OUTPUT_DIR + "/final", final_name)
 
         import shutil
         shutil.copy(final_output, final_path)
@@ -761,7 +761,7 @@ if __name__ == '__main__':
             # 4. Trim the video to the selected clip
             media_editor = MediaEditor()
             media_file = AudioVideoFile(input_path)
-            trimmed_path = os.path.join(OUTPUT_DIR, f'trimmed_clip_{clip_index + 1}.mp4')
+            trimmed_path = os.path.join(OUTPUT_DIR + "/trimmed", f'trimmed_clip_{clip_index + 1}.mp4')
             print('Trimming video to selected clip...')
             trimmed_media_file = media_editor.trim(
                 media_file=media_file,
@@ -770,7 +770,7 @@ if __name__ == '__main__':
                 trimmed_media_file_path=trimmed_path
             )
             # 5. Try to resize to 9:16 aspect ratio
-            output_path = os.path.join(OUTPUT_DIR, f'yt_short_{clip_index + 1}.mp4')
+            output_path = os.path.join(OUTPUT_DIR + "/resized", f'yt_short_{clip_index + 1}.mp4')
             try:
                 print('Resizing video to 9:16 aspect ratio...')
                 aspect_ratio_width = int(os.getenv('ASPECT_RATIO_WIDTH', '9'))
@@ -804,7 +804,7 @@ if __name__ == '__main__':
             import shutil
 
             viral_filename = safe_filename(title).strip() + ".mp4"
-            viral_path = os.path.join(OUTPUT_DIR, viral_filename)
+            viral_path = os.path.join(OUTPUT_DIR + "/viral", viral_filename)
             shutil.copy(final_output, viral_path)
             print(f"Final video saved as: {viral_path}\n")
 
