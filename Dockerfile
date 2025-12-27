@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir --upgrade setuptools wheel pip  && \
 # Check if this is needed 
 # RUN python3 -m pytorch_lightning.utilities.upgrade_checkpoint ../usr/local/lib/python3.10/dist-packages/whisperx/assets/pytorch_model.bin
 
-RUN sed -i 's/^[[:space:]]*weights_only=weights_only,/            weights_only=False,/' /usr/local/lib/python3.10/dist-packages/lightning_fabric/utilities/cloud_io.py 
+RUN sed -i 's/^[[:space:]]*weights_only=weights_only,/            weights_only=False,/' /opt/conda/lib/python3.11/site-packages/lightning_fabric/utilities/cloud_io.py 
 
 COPY . .
 
