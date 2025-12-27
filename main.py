@@ -13,6 +13,33 @@ from clipsai import Transcriber, ClipFinder, resize, MediaEditor, AudioVideoFile
 from clipsai.clip.clip import Clip
 from dotenv import load_dotenv
 
+
+### Queue Related imports
+import queue
+import threading
+import time
+import uuid
+import signal
+import sys
+
+task_queue = queue.Queue()
+results_store = {}
+shutdown = threading.Event()
+
+worker_thread = threading.Thread(target=worker, daemon=True)
+worker_thread.start()
+
+def shutdown_handler(signum, frame):
+    print(f"[SYSTEM] Signal {signum} received, shutting down...")
+    shutdown.set()
+    task_queue.put(None)  # unblock worker
+    worker_thread.join(timeout=30)
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, shutdown_handler)
+signal.signal(signal.SIGINT, shutdown_handler)
+
+
 # Suppress unnecessary warnings
 import warnings
 warnings.filterwarnings("ignore", message="Model was trained with pyannote.audio")
@@ -529,6 +556,39 @@ class StepTimer:
 
     def total(self):
         return round(sum(self.timings.values()), 3)
+
+def worker():
+    print("[WORKER] Started")
+    while not shutdown.is_set():
+        try:
+            task = task_queue.get(timeout=1)  # blocks, not busy
+        except queue.Empty:
+            continue
+
+        if task is None:
+            # Sentinel value for shutdown
+            print("[WORKER] Shutdown signal received")
+            break
+
+        task_id, payload = task
+        print(f"[WORKER] Processing task {task_id}")
+
+        try:
+            result = process_video_queued(**payload)
+            results_store[task_id] = {
+                "status": "done",
+                **result
+            }
+        except Exception as e:
+            results_store[task_id] = {
+                "status": "error",
+                "error": str(e)
+            }
+        finally:
+            task_queue.task_done()
+
+    print("[WORKER] Exited cleanly")
+
 
 
 if __name__ == '__main__':
