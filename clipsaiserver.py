@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from .main import task_queue
+from main import task_queue
 
 app = Flask(__name__)
 

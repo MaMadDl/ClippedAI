@@ -13,7 +13,6 @@ from clipsai import Transcriber, ClipFinder, resize, MediaEditor, AudioVideoFile
 from clipsai.clip.clip import Clip
 from dotenv import load_dotenv
 
-
 ### Queue Related imports
 import queue
 import threading
@@ -26,8 +25,6 @@ task_queue = queue.Queue()
 results_store = {}
 shutdown = threading.Event()
 
-worker_thread = threading.Thread(target=worker, daemon=True)
-worker_thread.start()
 
 def shutdown_handler(signum, frame):
     print(f"[SYSTEM] Signal {signum} received, shutting down...")
@@ -36,12 +33,13 @@ def shutdown_handler(signum, frame):
     worker_thread.join(timeout=30)
     sys.exit(0)
 
+
 signal.signal(signal.SIGTERM, shutdown_handler)
 signal.signal(signal.SIGINT, shutdown_handler)
 
-
 # Suppress unnecessary warnings
 import warnings
+
 warnings.filterwarnings("ignore", message="Model was trained with pyannote.audio")
 warnings.filterwarnings("ignore", message="Model was trained with torch")
 warnings.filterwarnings("ignore", message="Lightning automatically upgraded")
@@ -63,7 +61,7 @@ nltk.download('punkt')
 # --- Directories ---
 INPUT_DIR = "input"
 OUTPUT_DIR = "output"
-FONT_DIR = "fonts" 
+FONT_DIR = "fonts"
 
 # --- Hugging Face ---
 HUGGINGFACE_TOKEN = os.getenv("HUGGINGFACE_TOKEN", "your_huggingface_token_here")
@@ -140,10 +138,12 @@ SUBTITLE_STYLES = {
     },
 }
 
+
 def get_transcription_file_path(input_path: str) -> str:
     """Generate the transcription file path based on input video path."""
     base_name = os.path.splitext(os.path.basename(input_path))[0]
     return os.path.join(INPUT_DIR, f"{base_name}_transcription.pkl")
+
 
 def load_existing_transcription(transcription_path: str):
     """Load existing transcription if it exists."""
@@ -159,6 +159,7 @@ def load_existing_transcription(transcription_path: str):
             return None
     return None
 
+
 def save_transcription(transcription, transcription_path: str):
     """Save transcription to file."""
     try:
@@ -168,6 +169,7 @@ def save_transcription(transcription, transcription_path: str):
     except Exception as e:
         print(f"Error saving transcription: {e}")
 
+
 def ass_time(seconds: float) -> str:
     """Convert seconds to ASS time format."""
     hours = int(seconds // 3600)
@@ -175,6 +177,7 @@ def ass_time(seconds: float) -> str:
     secs = int(seconds % 60)
     centisecs = int((seconds % 1) * 100)
     return f"{hours:d}:{minutes:02d}:{secs:02d}.{centisecs:02d}"
+
 
 def safe_filename(s: str) -> str:
     """Remove characters not allowed in filenames, but keep spaces, punctuation, and emojis."""
@@ -189,7 +192,7 @@ def safe_filename(s: str) -> str:
                   "".join(chr(i) for i in range(0x1F300, 0x1F5FF)) + \
                   "".join(chr(i) for i in range(0x1F900, 0x1F9FF)) + \
                   "".join(chr(i) for i in range(0x1FA70, 0x1FAFF))
-    
+
     valid_chars = safe_chars + emoji_chars
     return ''.join(c for c in s if c in valid_chars)
 
@@ -204,10 +207,11 @@ def get_font_path(font_name: str) -> str:
     # If not found with extension, return as is (for system fonts)
     return os.path.join("fonts", font_name)
 
+
 def transcribe_with_progress(audio_file_path, transcriber):
     """Transcribe with progress tracking"""
     print('Transcribing video...')
-    
+
     # Get video duration for progress calculation
     try:
         probe_cmd = ['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', audio_file_path]
@@ -216,15 +220,15 @@ def transcribe_with_progress(audio_file_path, transcriber):
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         duration = 0
         print(f"Could not determine video duration for progress tracking: {e}")
-    
+
     # Custom progress callback
     def progress_callback(current_time):
         if duration > 0:
             progress = (current_time / duration) * 100
-            print(f"Transcription progress: {progress:.1f}% ({current_time:.1f}s / {duration:.1f}s)") 
+            print(f"Transcription progress: {progress:.1f}% ({current_time:.1f}s / {duration:.1f}s)")
         else:
             print(f"Transcription progress: {current_time:.1f}s processed")
-    
+
     # For now, we'll use a simple approach since clipsai doesn't expose progress directly
     # You can enhance this by modifying the clipsai library or using a different approach
     print("Starting transcription (progress updates may be limited)...")
@@ -232,18 +236,20 @@ def transcribe_with_progress(audio_file_path, transcriber):
     print("Transcription completed!")
     return transcription
 
+
 def create_animated_subtitles(video_path, transcription, clip, output_path):
     """
     Create clean, bold subtitles matching the provided style: white bold for text, yellow bold for numbers/currency, no effects, TOP CENTER.
     """
     print('Creating styled subtitles...')
-    
+
     # Get word info for the clip
-    word_info = [w for w in transcription.get_word_info() if w["start_time"] >= clip.start_time and w["end_time"] <= clip.end_time]
+    word_info = [w for w in transcription.get_word_info() if
+                 w["start_time"] >= clip.start_time and w["end_time"] <= clip.end_time]
     if not word_info:
         print('No word-level transcript found for the clip. Skipping subtitles.')
         return video_path
-    
+
     # Build cues: group words into phrases of max 25 chars
     cues = []
     current_cue = {
@@ -251,12 +257,12 @@ def create_animated_subtitles(video_path, transcription, clip, output_path):
         'start_time': None,
         'end_time': None
     }
-    
+
     for w in word_info:
         word = w["word"]
         start_time = w["start_time"] - clip.start_time
         end_time = w["end_time"] - clip.start_time  # Fixed: should be clip.start_time, not clip.end_time
-        
+
         should_start_new = False
         if current_cue['start_time'] is None:
             should_start_new = True
@@ -264,7 +270,7 @@ def create_animated_subtitles(video_path, transcription, clip, output_path):
             should_start_new = True
         elif start_time - current_cue['end_time'] > 0.5:
             should_start_new = True
-        
+
         if should_start_new:
             if current_cue['words']:
                 cues.append({
@@ -286,7 +292,7 @@ def create_animated_subtitles(video_path, transcription, clip, output_path):
             'end': current_cue['end_time'],
             'text': ' '.join(current_cue['words'])
         })
-    
+
     # Determine font used and print to console
     font_used = "Montserrat Extra Bold"
     print(f"Subtitles will use font: {font_used}")
@@ -326,7 +332,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                     line += f'{w} '
             line = line.strip()
             f.write(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{line}\n")
-    
+
     final_output = output_path.replace('.mp4', '_with_subtitles.mp4')
     ffmpeg_cmd = [
         'ffmpeg', '-i', video_path,
@@ -346,18 +352,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         print(f'FFmpeg stdout: {e.stdout.decode()}')
         return video_path
 
+
 def get_viral_title(transcript_text, groq_api_key):
     import requests
     # Limit examples to avoid too long prompt
     examples = [
-        "She was almost dead 😵", "He made $1,000,000 in 1 hour 💸", "This changed everything... 😲", 
+        "She was almost dead 😵", "He made $1,000,000 in 1 hour 💸", "This changed everything... 😲",
         "They couldn't believe what happened! 😱", "He risked it all for this 😬"
     ]
     prompt = (
-        "Given the following transcript, generate a catchy, viral YouTube Shorts title (max 7 words). "
-        "ALWAYS include an emoji in the title. ONLY output the title, nothing else. Do NOT use hashtags. "
-        "Do NOT explain, do NOT repeat the prompt, do NOT add quotes. The title should be in the style of these examples: "
-        + ", ".join(examples) + ".\n\nTranscript:\n" + transcript_text
+            "Given the following transcript, generate a catchy, viral YouTube Shorts title (max 7 words). "
+            "ALWAYS include an emoji in the title. ONLY output the title, nothing else. Do NOT use hashtags. "
+            "Do NOT explain, do NOT repeat the prompt, do NOT add quotes. The title should be in the style of these examples: "
+            + ", ".join(examples) + ".\n\nTranscript:\n" + transcript_text
     )
     headers = {
         'Authorization': f'Bearer {groq_api_key}',
@@ -382,7 +389,8 @@ def get_viral_title(transcript_text, groq_api_key):
         result = response.json()
         # Just return the first line of the response as the title, and filter out any lines that look like explanations or quotes
         content = result['choices'][0]['message']['content']
-        lines = [l.strip('"') for l in content.strip().split('\n') if l.strip() and not l.lower().startswith('here') and not l.lower().startswith('title:')]
+        lines = [l.strip('"') for l in content.strip().split('\n') if
+                 l.strip() and not l.lower().startswith('here') and not l.lower().startswith('title:')]
         title = lines[0] if lines else "Untitled Clip"
         return title
     except requests.exceptions.HTTPError as e:
@@ -394,41 +402,43 @@ def get_viral_title(transcript_text, groq_api_key):
         print(f"Unexpected error with Groq API: {e}")
         return "Untitled Clip"
 
+
 def calculate_engagement_score(clip, transcription):
     """
     Calculate a custom engagement score for a clip based on available data.
     Higher scores indicate more engaging content.
     """
     # Get words in the clip
-    clip_words = [w for w in transcription.get_word_info() 
+    clip_words = [w for w in transcription.get_word_info()
                   if w["start_time"] >= clip.start_time and w["end_time"] <= clip.end_time]
-    
+
     if not clip_words:
         return 0.0
-    
+
     # Calculate various engagement factors
     duration = clip.end_time - clip.start_time
     word_count = len(clip_words)
     word_density = word_count / duration if duration > 0 else 0
-    
+
     # Count numbers, currency, and exclamation marks (engagement indicators)
     engagement_words = 0
     for word_info in clip_words:
         word = word_info["word"]
         if any(char.isdigit() for char in word) or '$' in word or '!' in word:
             engagement_words += 1
-    
+
     # Calculate engagement score (0-1 scale)
     # Factors: word density (45%), engagement words ratio (30%), duration balance (25%)
     word_density_score = min(word_density / 3.0, 1.0)  # Normalize to 0-1
     engagement_ratio = engagement_words / word_count if word_count > 0 else 0
     duration_score = min(duration / 75.0, 1.0)  # Prefer clips around 75 seconds
-    
-    engagement_score = (word_density_score * 0.45 + 
-                       engagement_ratio * 0.30 + 
-                       duration_score * 0.25)
-    
+
+    engagement_score = (word_density_score * 0.45 +
+                        engagement_ratio * 0.30 +
+                        duration_score * 0.25)
+
     return engagement_score
+
 
 def process_video_queued(video_file, max_clips, reuse_transcription):
     timer = StepTimer()
@@ -540,6 +550,7 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
         }
     }
 
+
 class StepTimer:
     def __init__(self):
         self.timings = {}
@@ -556,6 +567,7 @@ class StepTimer:
 
     def total(self):
         return round(sum(self.timings.values()), 3)
+
 
 def worker():
     print("[WORKER] Started")
@@ -590,9 +602,11 @@ def worker():
     print("[WORKER] Exited cleanly")
 
 
+worker_thread = threading.Thread(target=worker, daemon=True)
+worker_thread.start()
 
 if __name__ == '__main__':
-        
+
     # Find all mp4 files in the input directory
     input_files = [f for f in os.listdir(INPUT_DIR) if f.endswith('.mp4')]
     if not input_files:
@@ -620,7 +634,7 @@ if __name__ == '__main__':
                         video_transcription_map[video_file] = None
                         break
                     elif 1 <= match_idx <= len(transcription_files):
-                        video_transcription_map[video_file] = transcription_files[match_idx-1]
+                        video_transcription_map[video_file] = transcription_files[match_idx - 1]
                         break
                     else:
                         print("Invalid choice. Try again.")
@@ -638,7 +652,7 @@ if __name__ == '__main__':
 
     # Prompt user for number of clips for each video BEFORE any processing
     video_max_clips = {}
-    clip_ranges = [(1,2), (3,4), (5,6), (7,8), (9,10), (11,12)]
+    clip_ranges = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12)]
     for video_file in video_transcription_map:
         print(f"\nHow many clips do you want for '{video_file}'?")
         for i, (low, high) in enumerate(clip_ranges, 1):
@@ -650,7 +664,7 @@ if __name__ == '__main__':
         except Exception:
             print("Invalid input. Defaulting to 2 clips.")
             user_choice = 1
-        max_clips = clip_ranges[user_choice-1][1]
+        max_clips = clip_ranges[user_choice - 1][1]
         print(f"Will select up to {max_clips} clips (if available and engaging).\n")
         video_max_clips[video_file] = max_clips
 
@@ -658,11 +672,14 @@ if __name__ == '__main__':
     for video_idx, (video_file, transcription_file) in enumerate(video_transcription_map.items(), 1):
         print(f"\n=== Processing Video {video_idx}/{len(video_transcription_map)}: {video_file} ===")
         input_path = os.path.abspath(os.path.join(INPUT_DIR, video_file))
-        transcription_path = os.path.join(INPUT_DIR, transcription_file) if transcription_file else get_transcription_file_path(input_path)
+        transcription_path = os.path.join(INPUT_DIR,
+                                          transcription_file) if transcription_file else get_transcription_file_path(
+            input_path)
         max_clips = video_max_clips[video_file]
 
         # 1. Transcribe the video (or load existing)
-        transcriber = Transcriber(model_size=os.getenv('TRANSCRIPTION_MODEL', 'large-v1') ,device=DEVICE_TYPE, precision=PERCISION)
+        transcriber = Transcriber(model_size=os.getenv('TRANSCRIPTION_MODEL', 'large-v1'), device=DEVICE_TYPE,
+                                  precision=PERCISION)
         transcription = load_existing_transcription(transcription_path) if transcription_file else None
         if transcription is None:
             transcription = transcribe_with_progress(input_path, transcriber)
@@ -694,8 +711,10 @@ if __name__ == '__main__':
             print(f'Selected top {len(selected_clips)} clips:')
             for i, clip in enumerate(selected_clips):
                 score = calculate_engagement_score(clip, transcription)
-                print(f'  Clip {i+1}: {clip.start_time:.1f}s - {clip.end_time:.1f}s (duration: {clip.end_time - clip.start_time:.1f}s, engagement: {score:.3f})')
-            print(f'Clip selection criteria: Top engaging clips within {MIN_CLIP_DURATION}-{MAX_CLIP_DURATION} second range')
+                print(
+                    f'  Clip {i + 1}: {clip.start_time:.1f}s - {clip.end_time:.1f}s (duration: {clip.end_time - clip.start_time:.1f}s, engagement: {score:.3f})')
+            print(
+                f'Clip selection criteria: Top engaging clips within {MIN_CLIP_DURATION}-{MAX_CLIP_DURATION} second range')
         else:
             print(f'No clips found between {MIN_CLIP_DURATION} and {MAX_CLIP_DURATION} seconds.')
             # Find clips that are too short and try to extend them
@@ -716,7 +735,8 @@ if __name__ == '__main__':
                             end_char=clip.end_char
                         )
                         selected_clips.append(extended_clip)
-                        print(f'Extended clip {i+1}: {extended_clip.start_time:.1f}s - {extended_clip.end_time:.1f}s (duration: {extended_clip.end_time - extended_clip.start_time:.1f}s)')
+                        print(
+                            f'Extended clip {i + 1}: {extended_clip.start_time:.1f}s - {extended_clip.end_time:.1f}s (duration: {extended_clip.end_time - extended_clip.start_time:.1f}s)')
             else:
                 # All clips are too long, trim the most engaging ones
                 print('All clips are too long. Trimming most engaging clips to maximum duration...')
@@ -732,7 +752,8 @@ if __name__ == '__main__':
                             end_char=clip.end_char
                         )
                         selected_clips.append(trimmed_clip)
-                        print(f'Trimmed clip {i+1}: {trimmed_clip.start_time:.1f}s - {trimmed_clip.end_time:.1f}s (duration: {trimmed_clip.end_time - trimmed_clip.start_time:.1f}s)')
+                        print(
+                            f'Trimmed clip {i + 1}: {trimmed_clip.start_time:.1f}s - {trimmed_clip.end_time:.1f}s (duration: {trimmed_clip.end_time - trimmed_clip.start_time:.1f}s)')
 
         # Process each selected clip
         for clip_index, clip in enumerate(selected_clips):
@@ -774,12 +795,14 @@ if __name__ == '__main__':
             # 6. Add styled subtitles
             final_output = create_animated_subtitles(output_path, transcription, clip, output_path)
             # 7. Generate viral title using Groq API
-            clip_text = " ".join([w["word"] for w in transcription.get_word_info() if w["start_time"] >= clip.start_time and w["end_time"] <= clip.end_time])
+            clip_text = " ".join([w["word"] for w in transcription.get_word_info() if
+                                  w["start_time"] >= clip.start_time and w["end_time"] <= clip.end_time])
             groq_api_key = os.getenv('GROQ_API_KEY', 'your_groq_api_key_here')
             title = get_viral_title(clip_text, groq_api_key)
             print(f"\nViral Title for Clip {clip_index + 1}: {title}")
             # 8. Save the final video with the viral title (keep spaces, punctuation, and emojis)
             import shutil
+
             viral_filename = safe_filename(title).strip() + ".mp4"
             viral_path = os.path.join(OUTPUT_DIR, viral_filename)
             shutil.copy(final_output, viral_path)
