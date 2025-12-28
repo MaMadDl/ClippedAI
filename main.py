@@ -444,7 +444,7 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
     timer = StepTimer()
     outputs = []
 
-    input_path = os.path.abspath(os.path.join(INPUT_DIR, video_file))
+    input_path = video_file
     transcription_path = get_transcription_file_path(input_path)
 
     # 1. Transcription
@@ -454,7 +454,7 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
         device='cpu',
         precision="int8"
     )
-
+    print("transcriber started")
     transcription = None
     if reuse_transcription:
         transcription = load_existing_transcription(transcription_path)
