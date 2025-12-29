@@ -12,7 +12,9 @@ RUN pip install --no-cache-dir --upgrade setuptools wheel pip  && \
     pip install --no-cache-dir -r requirements.txt
 
 # Check if this is needed 
-# RUN python3 -m pytorch_lightning.utilities.upgrade_checkpoint python -m pytorch_lightning.utilities.upgrade_checkpoint ../opt/conda/lib/python3.11/site-packages/whisperx/assets/pytorch_model.bin
+
+RUN sed -i 's|^[[:space:]]*checkpoint = torch.load(file, map_location=(torch.device("cpu") if args.map_to_cpu else None))|            checkpoint = torch.load(file, map_location=torch.device("cpu"), weights_only=False)|' /opt/conda/lib/python3.11/site-packages/pytorch_lightning/utilities/upgrade_checkpoint.py && \
+    python -m pytorch_lightning.utilities.upgrade_checkpoint ../opt/conda/lib/python3.11/site-packages/whisperx/assets/pytorch_model.bin
 
 RUN sed -i 's/^[[:space:]]*weights_only=weights_only,/            weights_only=False,/' /opt/conda/lib/python3.11/site-packages/lightning_fabric/utilities/cloud_io.py 
 

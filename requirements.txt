@@ -8,3 +8,5 @@ customtkinter
 requests
 flask>=2.3
 uuid
+
+mediapipe<=0.10.22

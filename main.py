@@ -47,6 +47,9 @@ warnings.filterwarnings("ignore", message="SymbolDatabase.GetPrototype() is depr
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning, module="google.protobuf")
 warnings.filterwarnings("ignore", message="torchaudio._backend.list_audio_backends has been deprecated")
+warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")
+warnings.filterwarnings("ignore", category=UserWarning, module="pyannote")
+
 
 # Suppress unnecessary warnings via environment variables
 os.environ['FFREPORT'] = 'file=ffmpeg.log:level=32'
@@ -512,7 +515,8 @@ def process_video_queued(video_file, max_clips, reuse_transcription):
                 height=crops.crop_height,
                 segments=crops.to_dict()["segments"],
             )
-        except Exception:
+        except Exception as e:
+            print("resize failed: \t" + str(e))
             output_path = trimmed_path
 
         final_output = create_animated_subtitles(
