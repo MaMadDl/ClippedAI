@@ -1,4 +1,4 @@
-clipsai
+clipsai@git+https://github.com/vlad196/clipsai.git
 whisperx@git+https://github.com/m-bain/whisperx.git
 python-magic
 protobuf>=4.25.3,<5 
@@ -9,4 +9,4 @@ requests
 flask>=2.3
 uuid
 
-mediapipe<=0.10.22
+# mediapipe<=0.10.22
